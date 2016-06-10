@@ -1,5 +1,5 @@
 Enter file contents here
-
+#문헌정보학과 20133795학번 신소진
 
 library(rjson)
 library(RCurl)
