@@ -1,0 +1,288 @@
+Enter file contents here
+
+
+library(rjson)
+library(RCurl)
+library(tm)
+library(SnowballC)
+
+###### with talk.creativ.json
+j_file1 <-"./talks_art.json"
+j_file2 <-"./talks_free.json"
+j_file3 <-"./talks_music.json"
+j_file4 <-"./talks_time.json"
+
+
+
+###
+### '\n' is REQUIRED at the end of JSON FILE. OMG!!!!!
+
+
+### 아트 만들기
+talk_art <-fromJSON(file=j_file1, method="C")
+
+str(talk_art)
+#print(talk_creativ)
+
+talk_names<-names(talk_art$talks[[16]]$talk)
+talk_names
+
+names(unlist(talk_art$talks))
+
+talk_creativ_list_art<-lapply(talk_art$talks, function(x){unlist(x)})         #여기
+str(talk_creativ_list_art)
+##talk_creativ_list_art1 <-data.frame(talk_creativ_list_art)
+##str(talk_creativ_list_art1)
+##parse_talk_all<-data.frame()  데이터 프레임으로 위에 바꿈
+
+
+============================================================================
+  
+  
+  ### 프리 만들기
+  talk_free <-fromJSON(file=j_file2, method="C")
+
+str(talk_free)
+#print(talk_creativ)
+
+talk_names_2<-names(talk_free$talks[[16]]$talk)
+talk_names_2
+
+names(unlist(talk_free$talks))
+
+talk_creativ_list_free<-lapply(talk_free$talks, function(x){unlist(x)})         #여기
+str(talk_creativ_list_free)
+##talk_creativ_list_free1 <-data.frame(talk_creativ_list_free)
+##str(talk_creativ_list_free1)
+##parse_talk_all<-data.frame()  데이터 프레임으로 위에 바꿈
+
+
+
+
+==================================================================================
+  
+  ### 뮤직 만들기
+  talk_music <-fromJSON(file=j_file3, method="C")
+
+str(talk_music)
+#print(talk_creativ)
+
+talk_names_3<-names(talk_music$talks[[16]]$talk)
+talk_names_3
+
+names(unlist(talk_music$talks))
+
+talk_creativ_list_music<-lapply(talk_music$talks, function(x){unlist(x)})         #여기
+str(talk_creativ_list_music)
+##talk_creativ_list_music1 <-data.frame(talk_creativ_list_music)
+##str(talk_creativ_list_music1)
+##parse_talk_all<-data.frame()  데이터 프레임으로 위에 바꿈
+
+
+
+=============================================================================
+  
+  ### 타임 만들기
+  talk_time <-fromJSON(file=j_file1, method="C")
+
+str(talk_time)
+#print(talk_creativ)
+
+talk_names_4<-names(talk_time$talks[[16]]$talk)
+talk_names_4
+
+names(unlist(talk_time$talks))
+
+talk_creativ_list_time<-lapply(talk_time$talks, function(x){unlist(x)})         #여기
+str(talk_creativ_list_time)
+##talk_creativ_list_time1 <-data.frame(talk_creativ_list_time)
+##str(talk_creativ_list_time1)
+##parse_talk_all<-data.frame()  데이터 프레임으로 위에 바꿈
+
+
+
+===============================================================================
+  
+  
+  ## rbind 함수를 사용하여 데이터를 위아래로 합친다.
+  ## rbind 함수사용방법은
+  ## rbind(합칠 데이터를 넣은 변수1 이름, 합칠 데이터를 넣은 변수2 이름) 이런 식으로 데이터를 하나로 묶어준다.
+  
+
+  
+  df_parse_talk_all1<-do.call("rbind", c(talk_creativ_list_art,talk_creativ_list_free))##  여기 중요!!!!!!!!!
+df_parse_talk_all2<-do.call("rbind", c(talk_creativ_list_music,talk_creativ_list_time))
+
+df_parse_talk_all <-data.frame(rbind(df_parse_talk_all1,df_parse_talk_all2))
+
+str(df_parse_talk_all) # 확인해봄
+
+length(df_parse_talk_all)
+length(df_parse_talk_all[1,])
+length(df_parse_talk_all[,1])
+
+##df_parse_talk_all<-data.frame(df_parse_talk_all)
+str(df_parse_talk_all)
+
+###chage datatype of talk description
+df_parse_talk_all$talk.description<-as.character(df_parse_talk_all$talk.description)
+#talk.description부분을 문자형태로 as.를 사용하여 지속적으로 바꾼다.
+str(df_parse_talk_all$talk.description)
+
+###change names of variables
+names(df_parse_talk_all)<-talk_names  # talk_names에 들어있는 것을 이름으로 보여준다.
+str(df_parse_talk_all)
+
+#==================================================================여기까지 함
+#####Term Clustering
+
+###Converting object type
+class(df_parse_talk_all$description)
+ted_docs <- Corpus(VectorSource(df_parse_talk_all$description)) 
+class(ted_docs)
+
+###Pre-processing  
+ted_docs <- tm_map(ted_docs, tolower) #소문자로 바꿔줌
+ted_docs <- tm_map(ted_docs, removeNumbers) #숫자로 바꿔줌
+ted_docs <- tm_map(ted_docs, removePunctuation) #모든 구두점 제거
+ted_docs <- tm_map(ted_docs, removeWords, stopwords("SMART")) # 불용어 설정
+ted_docs <- tm_map(ted_docs, removeWords, "ted") #불용어 설정
+
+###Tokenizing
+strsplit_space_tokenizer <- function(x)
+  unlist(strsplit(as.character(x), "[[:space:]]+"))
+#token_docs<-(sapply(ted_docs, strsplit_space_tokenizer))
+token_docs<-(sapply(ted_docs$content, strsplit_space_tokenizer))
+token_docs<-(sapply(token_docs, function(x){gsub(" ","", x)}))
+#token_docs<-(sapply(token_docs$content, function(x){gsub(" ","", x)}))
+token_freq<-table(unlist(token_docs))
+summary(data.frame(token_freq)$Freq)
+
+###Stemming
+stem_docs <- sapply(token_docs, stemDocument)
+stem_freq<-table(unlist(stem_docs))
+summary(data.frame(stem_freq)$Freq)
+
+df_stem_freq<-data.frame(stem_freq)
+str(df_stem_freq)
+desc_df_stem_freq<- df_stem_freq[order(-df_stem_freq$Freq),]
+
+#####With Stemmed docs
+
+###Term-Doc Matrix with Stemming
+class(stem_docs)
+stem_docs <- Corpus(VectorSource(stem_docs))
+class(stem_docs)
+
+###term weight: Tf
+ted_tdm_tf <- TermDocumentMatrix(stem_docs,
+                                 control = list(removePunctuation = TRUE,
+                                                weighting=weightTf,
+                                                stopwords = TRUE))
+
+inspect(ted_tdm_tf[1,])
+
+
+
+#==================================================================== 바꿈
+
+###Frequent terms:Tf
+findFreqTerms(ted_tdm_tf, lowfreq = 3)
+findFreqTerms(ted_tdm_tf, lowfreq = 1)
+
+termFrequency_tdm_tf <- rowSums(as.matrix(ted_tdm_tf))
+termFrequency_tdm_tf
+
+###term weight: TfIDF
+ted_tdm <- TermDocumentMatrix(stem_docs,
+                              control = list(removePunctuation = TRUE,
+                                             weighting=weightTfIdf,
+                                             stopwords = TRUE))
+
+inspect(ted_tdm[1,])
+
+###Frequent terms with TfIDF for comparing to Tf
+findFreqTerms(ted_tdm, lowfreq = 0.3)
+findFreqTerms(ted_tdm, lowfreq = 0.1)
+
+
+#####Compare & Recommend with Stemming
+### Frequent terms and 'creativ'
+#head(termFrequency_tdm_tf)
+
+creativ_assoc<-findAssocs(ted_tdm, "creativ", corlimit = 0.5)
+creativ_assoc
+
+design_assoc<-findAssocs(ted_tdm, "design", corlimit = 0.5)
+design_assoc
+
+class(creativ_assoc)
+str(creativ_assoc)
+creativ_assoc
+
+write.table(design_assoc, "./design_assoc_matrix.txt")
+
+df_design_assoc<-as.data.frame(design_assoc)
+df_design_assoc
+
+list_design_assoc<-as.list(df_design_assoc)
+list_design_assoc
+
+names(list_design_assoc$design)<-rownames(df_design_assoc)
+list_design_assoc
+
+###Write associate terms in file
+###cat(sep=" ") is DEFAULT!! Need to set sep="".
+
+fnlist <- function(x, fil){
+  for (v in seq_along(x)){
+    nam_i<-names(x[v])
+    kwd=names(x[[v]])
+    for (i in seq_along(x[[v]]) ){ cat(nam_i,"\t",kwd[i],"\t", x[[v]][i],"\n", sep="",
+                                       file=fil, append=TRUE) }
+  }
+}
+
+fnlist_file="./design_assoc_list.txt"
+
+if (file.exists(fnlist_file)){
+  unlink(fnlist_file, recursive = TRUE)
+  fnlist(list_design_assoc, "./design_assoc_list.txt")
+} else fnlist(list_design_assoc, "./design_assoc_list.txt")
+
+#####Hierachical Clustering 
+###removing sparse terms
+ted_tdm_sparse <- removeSparseTerms(ted_tdm, sparse =0.90)  
+ted_tdm_sparse$nrow
+ted_tdm<-ted_tdm_sparse
+
+#convert to matrix
+ted_m <- as.matrix(ted_tdm)
+
+###dist {stats} Distance Matrix Computation
+###scale {base} Scaling and Centering of Matrix-like Objects
+distMatrix<- dist(scale(ted_m))
+
+###hclust {stats} Hierarchical Clustering
+###method=c("single", complete", "average", "mcquitty", "median, "centroid", "ward.D", "ward.D2)
+fit <- hclust(distMatrix, method="average")
+plot(fit)
+
+###rect.hclust {stats} Draw Rectangles Around Hierarchical Clusters
+rect.hclust(fit, k=6, border = "red")
+
+###Save Dendrogram as PNG image file  
+png("./메타 첼린지과제_신소진_average기법.png", width = 1200, height=600)
+plot(fit)
+#k: number of clusters
+rect.hclust(fit, k=6, border = "red")  #border : 선의 색상을 바꿀 수 있다.
+dev.off()
+
+#cutree {stats} Cut a Tree into Groups of Data
+groups <- cutree(fit, k=6)
+df_groups <- data.frame(groups)
+str(df_groups)
+df_groups$KWD <- rownames(df_groups)
+str(df_groups)
+###Write the clustering result to text file
+write.table(df_groups, "./용어리스트_average기법_신소진.txt", row.names=FALSE, col.names=TRUE, sep="\t")
